@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import {
   createContext,
   useEffect,
@@ -83,7 +84,9 @@ function CitiesProvider({ children }) {
     }
     fetchCities();
   }, []);
-
+  CitiesProvider.propTypes = {
+    children: PropTypes.node.isRequired,
+  };
   const getCity = useCallback(
     async function getCity(id) {
       if (Number(id) === currentCity.id) return;
