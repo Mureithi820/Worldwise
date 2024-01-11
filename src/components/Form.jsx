@@ -13,20 +13,22 @@ import Message from "./Message";
 import Spinner from "./Spinner";
 import { useCities } from "../contexts/CitiesContext";
 import { useNavigate } from "react-router-dom";
+import supabase from "../services/supabase";
+import { countryCodeToEmoji } from "country-emoji";
 
-export function convertToEmoji(countryCode) {
-  const codePoints = countryCode
-    .toUpperCase()
-    .split("")
-    .map((char) => 127397 + char.charCodeAt());
-  return String.fromCodePoint(...codePoints);
-}
+// export function convertToEmoji(countryCode) {
+//   const codePoints = countryCode
+//     .toUpperCase()
+//     .split("")
+//     .map((char) => 127397 + char.charCodeAt());
+//   return String.fromCodePoint(...codePoints);
+// }
 
 const BASE_URL = "https://api.bigdatacloud.net/data/reverse-geocode-client";
 
 function Form() {
   const [lat, lng] = useUrlPosition();
-  const { createCity, isLoading } = useCities();
+  const { isLoading } = useCities();
   const navigate = useNavigate();
 
   const [isLoadingGeocoding, setIsLoadingGeocoding] = useState(false);
@@ -59,7 +61,8 @@ function Form() {
 
           setCityName(data.city || data.locality || "");
           setCountry(data.countryName);
-          setEmoji(convertToEmoji(data.countryCode));
+          // setEmoji(convertToEmoji(data.countryCode));
+          setEmoji(countryCodeToEmoji(data.countryCode));
         } catch (err) {
           setGeocodingError(err.message);
         } finally {
@@ -71,6 +74,23 @@ function Form() {
     [lat, lng]
   );
 
+  // async function handleSubmit(e) {
+  //   e.preventDefault();
+
+  //   if (!cityName || !date) return;
+
+  //   const newCity = {
+  //     cityName,
+  //     country,
+  //     emoji,
+  //     date,
+  //     notes,
+  //     position: { lat, lng },
+  //   };
+
+  //   await createCity(newCity);
+  //   navigate("/app/cities");
+  // }
   async function handleSubmit(e) {
     e.preventDefault();
 
@@ -85,8 +105,16 @@ function Form() {
       position: { lat, lng },
     };
 
-    await createCity(newCity);
-    navigate("/app/cities");
+    // Store data in Supabase
+    const { data, error } = await supabase.from("cities").upsert([newCity]);
+
+    if (error) {
+      console.error("Error storing data in Supabase:", error.message);
+      // Handle the error as needed
+    } else {
+      console.log("Data stored in Supabase:", data);
+      navigate("/app/cities");
+    }
   }
 
   if (isLoadingGeocoding) return <Spinner />;
